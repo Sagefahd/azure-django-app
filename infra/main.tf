@@ -55,6 +55,13 @@ resource "azurerm_container_app" "app" {
   resource_group_name          = azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
+  identity {
+    type = "SystemAssigned"
+  }
+
+
+
+
   template {
     container {
       name   = "django"
@@ -81,13 +88,14 @@ resource "azurerm_container_app" "app" {
   }
 
   registry {
-    server               = data.azurerm_container_registry.acr.login_server
-    username             = data.azurerm_container_registry.acr.admin_username
-    password_secret_name = "acr-password"
+    server   = data.azurerm_container_registry.acr.login_server
+    identity = "System"
   }
 
-  secret {
-    name  = "acr-password"
-    value = data.azurerm_container_registry.acr.admin_password
-  }
+
+}
+resource "azurerm_role_assignment" "acr_pull" {
+  scope                = azurerm_container_registry.acr.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_container_app.app.identity[0].principal_id
 }
